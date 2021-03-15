@@ -182,34 +182,34 @@ FROM weather w
 #Finální SELEKT
 
 SELECT 
-	cbd.country, 													                                                                    #1. klíč Stát
-	cbd.`date` , 													                                                                    #2.klíč Datum
-	cbd.confirmed,													                                                                  #Přidáno navíc Confirmed
-	CASE 	WHEN WEEKDAY(cbd.`date`) IN (5,6) THEN 1 ELSE 0			                                                #vzorec pro rozdělení víkendu
-		END AS weekend, 											# všední den 0, víkend 1
+	cbd.country, 												#1. klíč Stát
+	cbd.`date` , 												#2.klíč Datum
+	cbd.confirmed,												#Přidáno navíc Confirmed
+	CASE 	WHEN WEEKDAY(cbd.`date`) IN (5,6) THEN 1 ELSE 0			                                #vzorec pro rozdělení víkendu
+		END AS weekend, 										# všední den 0, víkend 1
 	CASE	WHEN month(cbd.`date`) IN (12,01,02) THEN 0
 				WHEN month(cbd.`date`) IN (03,04,05) THEN 1
 				WHEN month(cbd.`date`) IN (06,07,08) THEN 2
-				WHEN month(cbd.`date`) IN (09,10,11) THEN 3			                                                    #Vzorec pro roční období
-		END AS season, 												                                                                  # Jaro = 0,Léto = 1, Podzim = 2, Zima = 3 
-	cdho.population_density,										                                                              #Hustota obyvatel	
-	cdho.median_age_2018,											                                                                #Medián věku
-	edho.GDP,														                                                                      #HDP
-	edho.gini,														                                                                    #GINI koeficient
-	edho.mortaliy_under5,											                                                                #Úmrtnost dětí
-	christ_dho.christianity_percentile,								                                                        #% poměr křesťanství
-	islam_dho.islam_percentile,										                                                            #% poměr islámu
-	undho.unaffiliated_religions_percentile,						                                                      #% poměr nepřidružených náboženství
-	hin_dho.hinduism_percentile,									                                                            #% poměr hinduismu
-	bud_dho.buddhism_percentile,									                                                            #% poměr budhismu
-	folk_dho.folk_religions_percentile,								                                                        #% poměr lidových náboženství
-	other_dho.other_religions_percentile,							                                                        #% poměr ostatních náboženství
-	jud_dho.judaism_percentile,										                                                            #% poměr judaismu
-	exp_2015_dho.life_expectancy_2015 - exp_1965_dho.life_expectancy_1965 AS life_expectancy_difference,      #Výpočet rozdílu dožití
-	wdho.avg_daily_temp,											                                                                #Průměrná denní teplto - velmi nepřesné
-	wdho.max_wind,													                                                                  #Maximální hodnota větru - pouze u některých státu - neuplná data
-	wdho.not_rainy_hours											                                                                #Počet hodin kdy nepršelo - pouze u některých státu - neuplná data
-FROM covid19_basic_differences AS cbd								                                                        #Vše kromě weather napojeno na country
+				WHEN month(cbd.`date`) IN (09,10,11) THEN 3			                #Vzorec pro roční období
+		END AS season, 											# Jaro = 0,Léto = 1, Podzim = 2, Zima = 3 
+	cdho.population_density,										#Hustota obyvatel	
+	cdho.median_age_2018,											#Medián věku
+	edho.GDP,												#HDP
+	edho.gini,												#GINI koeficient
+	edho.mortaliy_under5,											#Úmrtnost dětí
+	christ_dho.christianity_percentile,								        #% poměr křesťanství
+	islam_dho.islam_percentile,										#% poměr islámu
+	undho.unaffiliated_religions_percentile,						                #% poměr nepřidružených náboženství
+	hin_dho.hinduism_percentile,									        #% poměr hinduismu
+	bud_dho.buddhism_percentile,									        #% poměr budhismu
+	folk_dho.folk_religions_percentile,								        #% poměr lidových náboženství
+	other_dho.other_religions_percentile,							                #% poměr ostatních náboženství
+	jud_dho.judaism_percentile,										#% poměr judaismu
+	exp_2015_dho.life_expectancy_2015 - exp_1965_dho.life_expectancy_1965 AS life_expectancy_difference,   	#Výpočet rozdílu dožití
+	wdho.avg_daily_temp,											#Průměrná denní teplto - velmi nepřesné
+	wdho.max_wind,												#Maximální hodnota větru - pouze u některých státu - neuplná data
+	wdho.not_rainy_hours											#Počet hodin kdy nepršelo -pouze u některých státu - neuplná data
+FROM covid19_basic_differences AS cbd								                #Vše kromě weather napojeno na country
 LEFT JOIN countries_dho AS cdho
 	ON cbd.country = cdho.country
 LEFT JOIN economies_dho AS edho
