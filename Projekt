@@ -13,7 +13,7 @@ Navíc jsem přidal sloupec confirmed.
 Jakmile přidám nakonec selectu WHERE a požadavek na datum nebo country, vyskočí nesmysly - nevím proč. 
 Nejlepší by bylo všechna data dát do tabulky s přesným počtem zemí.
 */
-WITH countries_dho AS #Tabulka pro zjištění hustoty obyvatel, mediánu a pro napojení měst pro teplotu.
+WITH countries_dho AS 											#Tabulka pro zjištění hustoty obyvatel, mediánu a pro napojení měst pro teplotu.
 (
 	SELECT 
 		DISTINCT country,
@@ -22,7 +22,7 @@ WITH countries_dho AS #Tabulka pro zjištění hustoty obyvatel, mediánu a pro 
 		median_age_2018 
 	FROM countries c2 
 ),
-economies_dho AS # Tabulka pro zjíštení HDP, GINI koeficientu a úmrtnostní dětí z roku 2019 pro nejaktuálnější data.
+economies_dho AS 											# Tabulka pro zjíštení HDP, GINI koeficientu a úmrtnostní dětí z roku 2019 pro nejaktuálnější data.
 ( 
 	SELECT 
 		DISTINCT country, 
@@ -44,7 +44,7 @@ LEFT JOIN countries AS c
 		ON r.country = c.country
 GROUP BY r.country , r.religion
 ),
-life_expectancy_1965_count AS #Tabulka pro dobu dožití v roce 1965
+life_expectancy_1965_count AS 												#Tabulka pro dobu dožití v roce 1965
 (
 	SELECT 
 		DISTINCT country,
@@ -53,7 +53,7 @@ life_expectancy_1965_count AS #Tabulka pro dobu dožití v roce 1965
 	FROM life_expectancy le
 	WHERE `year` = 1965	
 ),
-life_expectancy_2015_count AS #Tabulka pro dobu dožití v roce 2015
+life_expectancy_2015_count AS 												#Tabulka pro dobu dožití v roce 2015
 (
 	SELECT 
 		DISTINCT country,
@@ -87,20 +87,20 @@ SELECT
 	CASE	WHEN month(cbd.`date`) IN (12,01,02) THEN 0
 				WHEN month(cbd.`date`) IN (03,04,05) THEN 1
 				WHEN month(cbd.`date`) IN (06,07,08) THEN 2
-				WHEN month(cbd.`date`) IN (09,10,11) THEN 3						#Vzorec pro roční období
-		END AS season, 												# Jaro = 0,Léto = 1, Podzim = 2, Zima = 3 
-	cdho.population_density,											#Hustota obyvatel	
-	cdho.median_age_2018,												#Medián věku
-	edho.GDP,													#HDP
-	edho.gini,													#GINI koeficient
-	edho.mortaliy_under5,												#Úmrtnost dětí								#% poměr křesťanství
+				WHEN month(cbd.`date`) IN (09,10,11) THEN 3					#Vzorec pro roční období
+		END AS season, 											# Jaro = 0,Léto = 1, Podzim = 2, Zima = 3 
+	cdho.population_density,										#Hustota obyvatel	
+	cdho.median_age_2018,											#Medián věku
+	edho.GDP,												#HDP
+	edho.gini,												#GINI koeficient
+	edho.mortaliy_under5,											#Úmrtnost dětí								#% poměr křesťanství
 	dhorel.religion,
-	dhorel.religion_avg,												#% poměr judaismu
-	exp_2015_dho.life_expectancy_2015 - exp_1965_dho.life_expectancy_1965 AS life_expectancy_difference,  		#Výpočet rozdílu dožití
-	wdho.avg_daily_temp,												#Průměrná denní teplto - velmi nepřesné
-	wdho.max_wind,													# Maximální hodnota větru - pouze u některých státu - neuplná data
-	wdho.not_rainy_hours												# Počet hodin kdy nepršelo - pouze u některých státu - neuplná data
-FROM covid19_basic_differences AS cbd											#Vše kromě weather napojeno na country
+	dhorel.religion_avg,											#% poměr judaismu
+	exp_2015_dho.life_expectancy_2015 - exp_1965_dho.life_expectancy_1965 AS life_expectancy_difference,  	#Výpočet rozdílu dožití
+	wdho.avg_daily_temp,											#Průměrná denní teplto - velmi nepřesné
+	wdho.max_wind,												# Maximální hodnota větru - pouze u některých státu - neuplná data
+	wdho.not_rainy_hours											# Počet hodin kdy nepršelo - pouze u některých státu - neuplná data
+FROM covid19_basic_differences AS cbd										#Vše kromě weather napojeno na country
 LEFT JOIN countries_dho AS cdho
 	ON cbd.country = cdho.country
 LEFT JOIN economies_dho AS edho
@@ -121,6 +121,3 @@ AND edho.mortaliy_under5 IS NOT NULL
 SELECT 
 	*
 FROM vsechno
-WHERE country = "Algeria"
-AND date = "2021-03-03"
-AND religion = "Christianity"
