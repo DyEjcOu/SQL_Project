@@ -13,9 +13,7 @@ Navíc jsem přidal sloupec confirmed.
 Jakmile přidám nakonec selectu WHERE a požadavek na datum nebo country, vyskočí nesmysly - nevím proč. 
 Nejlepší by bylo všechna data dát do tabulky s přesným počtem zemí.
 */
-
-#Začátek TEMP tables
-WITH countries_dho AS   #Tabulka pro zjištění hustoty obyvatel, mediánu a pro napojení měst pro teplotu.
+WITH countries_dho AS #Tabulka pro zjištění hustoty obyvatel, mediánu a pro napojení měst pro teplotu.
 (
 	SELECT 
 		DISTINCT country,
@@ -24,7 +22,7 @@ WITH countries_dho AS   #Tabulka pro zjištění hustoty obyvatel, mediánu a pr
 		median_age_2018 
 	FROM countries c2 
 ),
-economies_dho AS        # Tabulka pro zjíštení HDP, GINI koeficientu a úmrtnostní dětí z roku 2019 pro nejaktuálnější data.
+economies_dho AS # Tabulka pro zjíštení HDP, GINI koeficientu a úmrtnostní dětí z roku 2019 pro nejaktuálnější data.
 ( 
 	SELECT 
 		DISTINCT country, 
@@ -34,117 +32,17 @@ economies_dho AS        # Tabulka pro zjíštení HDP, GINI koeficientu a úmrtn
 	FROM economies e
 	WHERE `year` = 2019
 ),
-christianity AS         #Tabulka pro % křesťanství
+religion_vsechno AS 
 ( 
-	SELECT 
-		DISTINCT r.country,
-		r.religion,
-		`year`,
-		ROUND(r.population / (c.population / 100),3) AS christianity_percentile
-	FROM religions AS r
-	LEFT JOIN countries AS c
-		ON r.country = c.country  
-	AND r.country = c.country
-	AND r.`year` = 2010
-	AND r.religion = "Christianity"
-),
-islam AS                #Tabulka pro % islámu
-( 
-	SELECT 
-		DISTINCT r.country,
-		r.religion,
-		`year`,
-		ROUND(r.population / (c.population / 100),3) AS islam_percentile
-	FROM religions AS r
-	LEFT JOIN countries AS c
-		ON r.country = c.country  
-	AND r.country = c.country
-	AND r.`year` = 2010
-	AND r.religion = "Islam"
-),
-unaffiliated_religions AS #Tabulka pro % nepřidružených náboženství
-( 
-	SELECT 
-		DISTINCT r.country,
-		r.religion,
-		`year`,
-		ROUND(r.population / (c.population / 100),3) AS unaffiliated_religions_percentile
-	FROM religions AS r
-	LEFT JOIN countries AS c
-		ON r.country = c.country  
-	AND r.country = c.country
-	AND r.`year` = 2010
-	AND r.religion = "Unaffiliated Religions"
-),
-hinduism AS               #Tabulka pro % hinduismu
-( 
-	SELECT 
-		DISTINCT r.country,
-		r.religion,
-		`year`,
-		ROUND(r.population / (c.population / 100),3) AS hinduism_percentile
-	FROM religions AS r
-	LEFT JOIN countries AS c
-		ON r.country = c.country  
-	AND r.country = c.country
-	AND r.`year` = 2010
-	AND r.religion = "Hinduism"
-),
-buddhism AS              #Tabulka pro % budhismu
-( 
-	SELECT 
-		DISTINCT r.country,
-		r.religion,
-		`year`,
-		ROUND(r.population / (c.population / 100),3) AS buddhism_percentile
-	FROM religions AS r
-	LEFT JOIN countries AS c
-		ON r.country = c.country  
-	AND r.country = c.country
-	AND r.`year` = 2010
-	AND r.religion = "Buddhism"
-),
-folk_religions AS         #Tabulka pro % lidových náboženství
-( 
-	SELECT 
-		DISTINCT r.country,
-		r.religion,
-		`year`,
-		ROUND(r.population / (c.population / 100),3) AS folk_religions_percentile
-	FROM religions AS r
-	LEFT JOIN countries AS c
-		ON r.country = c.country  
-	AND r.country = c.country
-	AND r.`year` = 2010
-	AND r.religion = "Folk Religions"
-),
-other_religions AS        #Tabulka pro % ostatních náboženství
-( 
-	SELECT 
-		DISTINCT r.country,
-		r.religion,
-		`year`,
-		ROUND(r.population / (c.population / 100),3) AS other_religions_percentile
-	FROM religions AS r
-	LEFT JOIN countries AS c
-		ON r.country = c.country  
-	AND r.country = c.country
-	AND r.`year` = 2010
-	AND r.religion = "Other Religions"
-),
-judaism AS                #Tabulka pro % judaismu
-( 
-	SELECT 
-		DISTINCT r.country,
-		r.religion,
-		`year`,
-		ROUND(r.population / (c.population / 100),3) AS judaism_percentile
-	FROM religions AS r
-	LEFT JOIN countries AS c
-		ON r.country = c.country  
-	AND r.country = c.country
-	AND r.`year` = 2010
-	AND r.religion = "Judaism"
+SELECT 
+	r.`year`,
+	r.country,
+	r.religion,
+	ROUND(r.population / (c.population / 100),3) AS religion_avg
+FROM religions r
+LEFT JOIN countries AS c
+		ON r.country = c.country
+GROUP BY r.country , r.religion
 ),
 life_expectancy_1965_count AS #Tabulka pro dobu dožití v roce 1965
 (
@@ -164,7 +62,7 @@ life_expectancy_2015_count AS #Tabulka pro dobu dožití v roce 2015
 	FROM life_expectancy le
 	WHERE `year` = 2015	
 ),
-weather_table_dho AS #Tabulka pro zjištění dat o počasí - velmi nepřesné. Špatná data
+weather_table_dho AS 													#Tabulka pro zjištění dat o počasí - velmi nepřesné. Špatná data
 ( 
 	SELECT 
 	city,
@@ -172,64 +70,43 @@ weather_table_dho AS #Tabulka pro zjištění dat o počasí - velmi nepřesné.
 	`hour`,
 	temp,
 	(SELECT AVG(temp) FROM weather w2 WHERE w2.city = w.city AND w2.`hour` BETWEEN 6 AND 18) AS avg_daily_temp,
-	(SELECT MAX(wind) FROM weather w2 WHERE w2.city = w.city  AND w2.`date` = w.`date`) AS max_wind,#Když dám datum na přesný den, tak je OK hodnota, ale všude
-	(SELECT COUNT(w2.hour) FROM weather w2 WHERE w2.city = w.city AND w2.rain != 0) AS not_rainy_hours#
+	(SELECT MAX(wind) FROM weather w2 WHERE w2.city = w.city  AND w2.`date` = w.`date`) AS max_wind,		#Když dám datum na přesný den, tak je OK hodnota, ale všude
+	(SELECT COUNT(w2.hour) FROM weather w2 WHERE w2.rain >= 0.1 AND w2.city = w.city) AS not_rainy_hours		#
 FROM weather w 
-)
-
-# KONEC TEMP tables
+),
 
 #Finální SELEKT
-
+vsechno AS
+(
 SELECT 
-	cbd.country, 												#1. klíč Stát
-	cbd.`date` , 												#2.klíč Datum
-	cbd.confirmed,												#Přidáno navíc Confirmed
-	CASE 	WHEN WEEKDAY(cbd.`date`) IN (5,6) THEN 1 ELSE 0			                                #vzorec pro rozdělení víkendu
-		END AS weekend, 										# všední den 0, víkend 1
+	cbd.country, 													#1. klíč Stát
+	cbd.`date` , 													#2.klíč Datum
+	cbd.confirmed,													#Přidáno navíc Confirmed
+	CASE 	WHEN WEEKDAY(cbd.`date`) IN (5,6) THEN 1 ELSE 0								#vzorec pro rozdělení víkendu
+		END AS weekend, 											# všední den 0, víkend 1
 	CASE	WHEN month(cbd.`date`) IN (12,01,02) THEN 0
 				WHEN month(cbd.`date`) IN (03,04,05) THEN 1
 				WHEN month(cbd.`date`) IN (06,07,08) THEN 2
-				WHEN month(cbd.`date`) IN (09,10,11) THEN 3			                #Vzorec pro roční období
-		END AS season, 											# Jaro = 0,Léto = 1, Podzim = 2, Zima = 3 
-	cdho.population_density,										#Hustota obyvatel	
-	cdho.median_age_2018,											#Medián věku
-	edho.GDP,												#HDP
-	edho.gini,												#GINI koeficient
-	edho.mortaliy_under5,											#Úmrtnost dětí
-	christ_dho.christianity_percentile,								        #% poměr křesťanství
-	islam_dho.islam_percentile,										#% poměr islámu
-	undho.unaffiliated_religions_percentile,						                #% poměr nepřidružených náboženství
-	hin_dho.hinduism_percentile,									        #% poměr hinduismu
-	bud_dho.buddhism_percentile,									        #% poměr budhismu
-	folk_dho.folk_religions_percentile,								        #% poměr lidových náboženství
-	other_dho.other_religions_percentile,							                #% poměr ostatních náboženství
-	jud_dho.judaism_percentile,										#% poměr judaismu
-	exp_2015_dho.life_expectancy_2015 - exp_1965_dho.life_expectancy_1965 AS life_expectancy_difference,   	#Výpočet rozdílu dožití
-	wdho.avg_daily_temp,											#Průměrná denní teplto - velmi nepřesné
-	wdho.max_wind,												#Maximální hodnota větru - pouze u některých státu - neuplná data
-	wdho.not_rainy_hours											#Počet hodin kdy nepršelo -pouze u některých státu - neuplná data
-FROM covid19_basic_differences AS cbd								                #Vše kromě weather napojeno na country
+				WHEN month(cbd.`date`) IN (09,10,11) THEN 3						#Vzorec pro roční období
+		END AS season, 												# Jaro = 0,Léto = 1, Podzim = 2, Zima = 3 
+	cdho.population_density,											#Hustota obyvatel	
+	cdho.median_age_2018,												#Medián věku
+	edho.GDP,													#HDP
+	edho.gini,													#GINI koeficient
+	edho.mortaliy_under5,												#Úmrtnost dětí								#% poměr křesťanství
+	dhorel.religion,
+	dhorel.religion_avg,												#% poměr judaismu
+	exp_2015_dho.life_expectancy_2015 - exp_1965_dho.life_expectancy_1965 AS life_expectancy_difference,  		#Výpočet rozdílu dožití
+	wdho.avg_daily_temp,												#Průměrná denní teplto - velmi nepřesné
+	wdho.max_wind,													# Maximální hodnota větru - pouze u některých státu - neuplná data
+	wdho.not_rainy_hours												# Počet hodin kdy nepršelo - pouze u některých státu - neuplná data
+FROM covid19_basic_differences AS cbd											#Vše kromě weather napojeno na country
 LEFT JOIN countries_dho AS cdho
 	ON cbd.country = cdho.country
 LEFT JOIN economies_dho AS edho
 	ON cbd.country = edho.country
-LEFT JOIN christianity AS christ_dho
-	ON cbd.country = christ_dho.country
-LEFT JOIN islam AS islam_dho
-	ON cbd.country = islam_dho.country
-LEFT JOIN unaffiliated_religions AS undho 
-	ON cbd.country = undho.country
-LEFT JOIN hinduism AS hin_dho
-	ON cbd.country = hin_dho.country
-LEFT JOIN buddhism AS bud_dho
-	ON cbd.country = bud_dho.country
-LEFT JOIN folk_religions AS folk_dho
-	ON cbd.country = folk_dho.country
-LEFT JOIN other_religions AS other_dho
-	ON cbd.country = other_dho.country
-LEFT JOIN judaism AS jud_dho
-	ON cbd.country = jud_dho.country
+LEFT JOIN religion_vsechno AS dhorel
+	ON cbd.country = dhorel.country
 LEFT JOIN life_expectancy_1965_count AS exp_1965_dho
 	ON cbd.country = exp_1965_dho.country
 LEFT JOIN life_expectancy_2015_count AS exp_2015_dho
@@ -239,3 +116,11 @@ LEFT JOIN weather_table_dho AS wdho
 WHERE cbd.confirmed IS NOT NULL
 AND edho.GDP IS NOT NULL 
 AND edho.mortaliy_under5 IS NOT NULL
+)
+
+SELECT 
+	*
+FROM vsechno
+WHERE country = "Algeria"
+AND date = "2021-03-03"
+AND religion = "Christianity"
