@@ -145,8 +145,8 @@ AND edho.GDP IS NOT NULL
 AND edho.mortaliy_under5 IS NOT NULL
 )
 
-SELECT 														#SELECT kde je možné vybrat jen určitá data, co dotyčný potřebuje
+SELECT 													#SELECT kde je možné vybrat jen určitá data, co dotyčný potřebuje
 	* 
 FROM vsechno
-WHERE country = "Ukraine"
-AND date = "2020-03-03"
+WHERE country = "Austria"
+AND date = "2020-03-03" 										#Takhle zobrazeno vše potřebné a správně, jde to tak i u dalších států
