@@ -141,8 +141,8 @@ LEFT JOIN maximalni_vitr AS b
 LEFT JOIN hodiny_neprsi AS c 
 	ON cbd.country = c.country AND cbd.`date` = c.datum
 WHERE cbd.confirmed IS NOT NULL
-AND edho.GDP IS NOT NULL 
-AND edho.mortaliy_under5 IS NOT NULL
+AND edho.GDP IS NOT NULL 										#Pro větší přehlednost, lze odstranit - u některých státu jsou hodnoty NULL
+AND edho.mortaliy_under5 IS NOT NULL									#Pro větší přehlednost, lze odstranit -  u některých státu jsou hodnoty NULL
 )
 
 SELECT 													#SELECT kde je možné vybrat jen určitá data, co dotyčný potřebuje
