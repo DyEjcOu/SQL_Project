@@ -6,8 +6,8 @@ V tabulce religion data k roku 2010 - 2020 je nejspíše jen odhad, nesedí poč
 V tabulce weather nejsou správná data. 
 Hours jsou jen 0,3,6,9,12,15,18,21.
 Proto jsem denní teplotu počítal mezi 6 a 18 hodinou.
-Vše napojeno na country, ale tabulka weather má pouze města. Tudíž napojeno na Capital_city. V tabulce weather je celkem
-jen 34 měst. Z toho 24 se shoduje s capital_city - data pro pruměrnou teplotu tedy nejso za celý stát.
+Vše napojeno na country, ale tabulka weather má pouze města. Vytvořena nová tabulka, kde jsem doplnil státy pro města a pak napojil na country. V tabulce weather je celkem
+jen 34 měst. Data pro pruměrnou teplotu tedy nejso za celý stát.
 Tento Select zobrazí všechna data.
 Navíc jsem přidal sloupec confirmed.
 Vytvořena pomocná tabulka t_david_horak_SQL_weather pro přidání country a následného joinu přes Country.
@@ -38,7 +38,7 @@ economies_dho AS			# Tabulka pro zjíštení HDP, GINI koeficientu a úmrtnostn�
 	FROM economies e
 	WHERE `year` = 2019
 ),
-religion_vsechno AS 
+religion_vsechno AS 			#Tabulka pro všechna náboženství
 ( 
 SELECT 
 	r.`year`,
@@ -123,7 +123,7 @@ SELECT
 	a.avg_temp, 												#Prumerna teplota
 	b.max_wind,												#Maximalni vitr
 	c.not_rainy_hours											# Počet hodin kdy nepršelo - pouze u některých státu - neuplná data
-FROM covid19_basic_differences AS cbd										#Vše napojeno na country, počasí i na datum
+FROM covid19_basic_differences AS cbd										#Vše napojeno na country, údaje s počasím i na datum
 LEFT JOIN countries_dho AS cdho
 	ON cbd.country = cdho.country
 LEFT JOIN economies_dho AS edho
