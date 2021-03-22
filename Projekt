@@ -10,10 +10,16 @@ Vše napojeno na country, ale tabulka weather má pouze města. Tudíž napojeno
 jen 34 měst. Z toho 24 se shoduje s capital_city - data pro pruměrnou teplotu tedy nejso za celý stát.
 Tento Select zobrazí všechna data.
 Navíc jsem přidal sloupec confirmed.
-Jakmile přidám nakonec selectu WHERE a požadavek na datum nebo country, vyskočí nesmysly - nevím proč. 
-Nejlepší by bylo všechna data dát do tabulky s přesným počtem zemí.
+Vytvořena pomocná tabulka t_david_horak_SQL_weather pro přidání country a následného joinu přes Country.
+Data o teplotě, větru a hodin kdy neprší nejsou pro všechny dny.
+Minimální datum je v tabulce t_david_horak_SQL_weather sice 2018-01-01, ale to je pouze pro Brno. 
+To jsem nezapočítal, Česko by tam bylo 2x. Nechal jsem tedy všechna ostatní města a ty jsou od 2020-01-01.
+Maximální datum je 2020-11-09. 
+Minimální datum v covid19_basic_differences je však 2020-01-22 a maximální aktuálně 2021-03-11 - tabulka je aktualizována s novými daty.
+Měření těchto hodnot tedy není úplně průkazné.
+
 */
-WITH countries_dho AS 											#Tabulka pro zjištění hustoty obyvatel, mediánu a pro napojení měst pro teplotu.
+WITH countries_dho AS 			#Tabulka pro zjištění hustoty obyvatel, mediánu a pro napojení měst pro teplotu.
 (
 	SELECT 
 		DISTINCT country,
@@ -22,7 +28,7 @@ WITH countries_dho AS 											#Tabulka pro zjištění hustoty obyvatel, medi
 		median_age_2018 
 	FROM countries c2 
 ),
-economies_dho AS 											# Tabulka pro zjíštení HDP, GINI koeficientu a úmrtnostní dětí z roku 2019 pro nejaktuálnější data.
+economies_dho AS			# Tabulka pro zjíštení HDP, GINI koeficientu a úmrtnostní dětí z roku 2019 pro nejaktuálnější data.
 ( 
 	SELECT 
 		DISTINCT country, 
@@ -44,7 +50,7 @@ LEFT JOIN countries AS c
 		ON r.country = c.country
 GROUP BY r.country , r.religion
 ),
-life_expectancy_1965_count AS 												#Tabulka pro dobu dožití v roce 1965
+life_expectancy_1965_count AS 		#Tabulka pro dobu dožití v roce 1965
 (
 	SELECT 
 		DISTINCT country,
@@ -53,7 +59,7 @@ life_expectancy_1965_count AS 												#Tabulka pro dobu dožití v roce 1965
 	FROM life_expectancy le
 	WHERE `year` = 1965	
 ),
-life_expectancy_2015_count AS 												#Tabulka pro dobu dožití v roce 2015
+life_expectancy_2015_count AS 		#Tabulka pro dobu dožití v roce 2015
 (
 	SELECT 
 		DISTINCT country,
@@ -62,45 +68,62 @@ life_expectancy_2015_count AS 												#Tabulka pro dobu dožití v roce 2015
 	FROM life_expectancy le
 	WHERE `year` = 2015	
 ),
-weather_table_dho AS 													#Tabulka pro zjištění dat o počasí - velmi nepřesné. Špatná data
-( 
+prumerna_teplota AS 			#Tabulka pro prumernou teplotu
+(
+SELECT 
+	country, 
+	datum,
+	AVG(temp) AS avg_temp
+FROM t_david_horak_SQL_weather 
+WHERE `hour` BETWEEN 6 AND 18
+GROUP BY datum,country 
+),
+maximalni_vitr AS 			#Tabulka pro maximalni vitr
+(
 	SELECT 
-	city,
-	`date`,
-	`hour`,
-	temp,
-	(SELECT AVG(temp) FROM weather w2 WHERE w2.city = w.city AND w2.`hour` BETWEEN 6 AND 18) AS avg_daily_temp,
-	(SELECT MAX(wind) FROM weather w2 WHERE w2.city = w.city  AND w2.`date` = w.`date`) AS max_wind,		#Když dám datum na přesný den, tak je OK hodnota, ale všude
-	(SELECT COUNT(w2.hour) FROM weather w2 WHERE w2.rain >= 0.1 AND w2.city = w.city) AS not_rainy_hours		#
-FROM weather w 
+		country,
+		datum, 
+		MAX(wind) AS max_wind
+	FROM t_david_horak_SQL_weather 
+	GROUP BY datum,country 
+),
+hodiny_neprsi AS 			#Tabulka pro hodiny ve dni, kdy neprsi
+(
+	SELECT 
+		country,
+		datum,
+		COUNT(`hour`) AS not_rainy_hours
+	FROM t_david_horak_SQL_weather 
+	WHERE rain >= 0.1		
+	GROUP BY datum,country 
 ),
 
 #Finální SELEKT
 vsechno AS
 (
 SELECT 
-	cbd.country, 													#1. klíč Stát
-	cbd.`date` , 													#2.klíč Datum
-	cbd.confirmed,													#Přidáno navíc Confirmed
-	CASE 	WHEN WEEKDAY(cbd.`date`) IN (5,6) THEN 1 ELSE 0								#vzorec pro rozdělení víkendu
-		END AS weekend, 											# všední den 0, víkend 1
-	CASE	WHEN month(cbd.`date`) IN (12,01,02) THEN 0
-				WHEN month(cbd.`date`) IN (03,04,05) THEN 1
+	cbd.country, 												#1. klíč Stát
+	cbd.`date` , 												#2.klíč Datum
+	cbd.confirmed,												#Přidáno navíc Confirmed
+	CASE 	WHEN WEEKDAY(cbd.`date`) IN (5,6) THEN 1 ELSE 0							#vzorec pro rozdělení víkendu
+		END AS weekend, 										# všední den 0, víkend 1
+	CASE	WHEN month(cbd.`date`) IN (12,01,02) THEN 0							#Vzorec pro roční období
+				WHEN month(cbd.`date`) IN (03,04,05) THEN 1					# Jaro = 0,Léto = 1, Podzim = 2, Zima = 3
 				WHEN month(cbd.`date`) IN (06,07,08) THEN 2
-				WHEN month(cbd.`date`) IN (09,10,11) THEN 3					#Vzorec pro roční období
-		END AS season, 											# Jaro = 0,Léto = 1, Podzim = 2, Zima = 3 
+				WHEN month(cbd.`date`) IN (09,10,11) THEN 3			
+		END AS season, 											 
 	cdho.population_density,										#Hustota obyvatel	
 	cdho.median_age_2018,											#Medián věku
 	edho.GDP,												#HDP
 	edho.gini,												#GINI koeficient
-	edho.mortaliy_under5,											#Úmrtnost dětí								#% poměr křesťanství
-	dhorel.religion,
-	dhorel.religion_avg,											#% poměr judaismu
+	edho.mortaliy_under5,											#Úmrtnost dětí
+	dhorel.religion,											#náboženství
+	dhorel.religion_avg,											#% poměr náboženství
 	exp_2015_dho.life_expectancy_2015 - exp_1965_dho.life_expectancy_1965 AS life_expectancy_difference,  	#Výpočet rozdílu dožití
-	wdho.avg_daily_temp,											#Průměrná denní teplto - velmi nepřesné
-	wdho.max_wind,												# Maximální hodnota větru - pouze u některých státu - neuplná data
-	wdho.not_rainy_hours											# Počet hodin kdy nepršelo - pouze u některých státu - neuplná data
-FROM covid19_basic_differences AS cbd										#Vše kromě weather napojeno na country
+	a.avg_temp, 												#Prumerna teplota
+	b.max_wind,												#Maximalni vitr
+	c.not_rainy_hours											# Počet hodin kdy nepršelo - pouze u některých státu - neuplná data
+FROM covid19_basic_differences AS cbd										#Vše napojeno na country, počasí i na datum
 LEFT JOIN countries_dho AS cdho
 	ON cbd.country = cdho.country
 LEFT JOIN economies_dho AS edho
@@ -111,13 +134,19 @@ LEFT JOIN life_expectancy_1965_count AS exp_1965_dho
 	ON cbd.country = exp_1965_dho.country
 LEFT JOIN life_expectancy_2015_count AS exp_2015_dho
 	ON cbd.country = exp_2015_dho.country
-LEFT JOIN weather_table_dho AS wdho 
-	ON cdho.capital_city = wdho.city 
+LEFT JOIN prumerna_teplota AS a
+	ON cbd.country = a.country AND cbd.`date` = a.datum
+LEFT JOIN maximalni_vitr AS b
+	ON cbd.country = b.country AND cbd.`date` = b.datum
+LEFT JOIN hodiny_neprsi AS c 
+	ON cbd.country = c.country AND cbd.`date` = c.datum
 WHERE cbd.confirmed IS NOT NULL
-AND edho.GDP IS NOT NULL 
-AND edho.mortaliy_under5 IS NOT NULL
+AND edho.GDP IS NOT NULL 										#Pro větší přehlednost, lze odstranit - u některých státu jsou hodnoty NULL
+AND edho.mortaliy_under5 IS NOT NULL									#Pro větší přehlednost, lze odstranit -  u některých státu jsou hodnoty NULL
 )
 
-SELECT 
-	*
+SELECT 													#SELECT kde je možné vybrat jen určitá data, co dotyčný potřebuje
+	* 
 FROM vsechno
+WHERE country = "Austria"
+AND date = "2020-03-03" 										#Takhle zobrazeno vše potřebné a správně, jde to tak i u dalších států
